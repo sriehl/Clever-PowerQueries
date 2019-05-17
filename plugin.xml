@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<plugin xmlns="http://plugin.powerschool.pearson.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://plugin.powerschool.pearson.com plugin.xsd" name="Clever PowerQueries" version="0.0.1" description="Clever PowerQueries for the nightly upload">
+  <publisher name="Steven Riehl">
+    <contact email="riehls@billingsschools.org"/>
+  </publisher>
+</plugin>
