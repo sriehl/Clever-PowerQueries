@@ -1,28 +1,32 @@
 <?xml version="1.0"?>
 <queries>
   <query name="org.billingsschools.clever.admins" coreTable="USERS" flattened="true" tags="">
-    <summary>Clever Admins</summary>
-    <description>Clever Admins data</description>
+    <summary>Clever Staff</summary>
+    <description>Clever Staff data</description>
     <columns>
       <column column="SCHOOLSTAFF.SCHOOLID">SCHOOL_ID</column>
       <column column="USERS.DCID">STAFF_ID</column>
-      <column column="USERS.EMAIL_ADDR">ADMIN_EMAIL</column>
+      <column column="USERS.EMAIL_ADDR">STAFF_EMAIL</column>
       <column column="USERS.FIRST_NAME">FIRST_NAME</column>
       <column column="USERS.LAST_NAME">LAST_NAME</column>
-      <column column="USERS.FIRST_NAME">ADMIN_TITLE</column>
+      <column column="USERS.LAST_NAME">DEPARTMENT</column>
+      <column column="USERS.LAST_NAME">TITLE</column>
       <column column="USERS.EMAIL_ADDR">USERNAME</column>
       <column column="USERS.EMAIL_ADDR">PASSWORD</column>
+      <column column="USERS.EMAIL_ADDR">ROLE</column>
     </columns>
     <sql><![CDATA[
       select distinct
         ss.schoolid school_id,
         u.dcid staff_id,
-        u.email_addr admin_email,
+        u.email_addr staff_email,
         u.first_name first_name,
         u.last_name last_name,
-        '' admin_title,
+        '' department,
+        '' title,
         substr(u.email_addr, 0, instr(u.email_addr, '@')-1) username,
-        '' password
+        '' password,
+        '' role
       from
         users u
         left join schoolstaff ss
@@ -114,6 +118,209 @@
         schools sch
       where
         sch.school_number not in (0, 999999, 6200, 1267, 1258, 1834)
+      ]]></sql>
+  </query>
+  <query name="org.billingsschools.clever.sections" coreTable="SECTIONS" flattened="true" tags="">
+    <summary>Clever Sections</summary>
+    <description>Clever Sections data</description>
+    <columns>
+      <column column="SECTIONS.SCHOOLID">SCHOOL_ID</column>
+      <column column="SECTIONS.ID">SECTION_ID</column>
+      <column column="SECTIONS.TEACHER">TEACHER_ID</column>
+      <column column="SECTIONS.TEACHER">TEACHER_2_ID</column>
+      <column column="SECTIONS.TEACHER">TEACHER_3_ID</column>
+      <column column="SECTIONS.TEACHER">TEACHER_4_ID</column>
+      <column column="COURSES.COURSE_NAME">NAME</column>
+      <column column="SECTIONS.SECTION_NUMBER">SECTION_NUMBER</column>
+      <column column="SECTIONS.SECTION_NUMBER">GRADE</column>
+      <column column="COURSES.COURSE_NAME">COURSE_NAME</column>
+      <column column="COURSES.COURSE_NUMBER">COURSE_NUMBER</column>
+      <column column="COURSES.COURSE_NUMBER">COURSE_DESCRIPTION</column>
+      <column column="SECTIONS.EXPRESSION">PERIOD</column>
+      <column column="SECTIONS.EXPRESSION">SUBJECT</column>
+      <column column="TERMS.ABBREVIATION">TERM_NAME</column>
+      <column column="TERMS.FIRSTDAY">TERM_START</column>
+      <column column="TERMS.LASTDAY">TERM_END</column>
+    </columns>
+    <sql><![CDATA[
+      with first_day_or_today as (
+        select
+          case
+            when t.firstday > sysdate then t.firstday
+            else sysdate
+          end effdate
+        from
+          terms t
+        where
+          t.id = (extract(year from sysdate) + case when extract(month from sysdate) >= 7 then 1 else 0 end - 1991) * 100
+          and t.schoolid = 0
+          and t.isyearrec = 1
+      )
+
+      select
+        sec.schoolid school_id,
+        sec.id section_id,
+        sec.teacher teacher_id,
+        '' teacher_2_id,
+        '' teacher_3_id,
+        '' teacher_4_id,
+        sch.abbreviation || ': ' || c.course_name || ' section ' || sec.section_number name,
+        sec.section_number,
+        '' grade,
+        c.course_name,
+        c.course_number,
+        '' course_description,
+        substr(sec.expression, 0, instr(sec.expression, '(')-1) period,
+        '' subject,
+        t.abbreviation term_name,
+        to_char(t.firstday, 'MM/DD/YYYY') term_start,
+        to_char(t.lastday, 'MM/DD/YYYY') term_end
+
+      from
+        sections sec
+        left join courses c
+          on c.course_number = sec.course_number
+        left join schools sch
+          on sch.school_number = sec.schoolid
+        left join terms t
+          on t.id = sec.termid and t.schoolid = sec.schoolid
+
+      where
+        sec.schoolid not in (0, 999999, 6200, 1267, 1258, 1834)
+        and sec.course_number not in ('NC100')
+        and (select effdate from first_day_or_today) between t.firstday and t.lastday
+        and sec.no_of_students > 0
+      ]]></sql>
+  </query>
+  <query name="org.billingsschools.clever.students" coreTable="STUDENTS" flattened="true" tags="">
+    <summary>Clever Students</summary>
+    <description>Clever Students data</description>
+    <columns>
+      <column column="STUDENTS.ENROLLMENT_SCHOOLID">SCHOOL_ID</column>
+      <column column="STUDENTS.ID">STUDENT_ID</column>
+      <column column="STUDENTS.STUDENT_NUMBER">STUDENT_NUMBER</column>
+      <column column="STUDENTS.STATE_STUDENTNUMBER">STATE_ID</column>
+      <column column="STUDENTS.LAST_NAME">LAST_NAME</column>
+      <column column="STUDENTS.MIDDLE_NAME">MIDDLE_NAME</column>
+      <column column="STUDENTS.FIRST_NAME">FIRST_NAME</column>
+      <column column="STUDENTS.GRADE_LEVEL">GRADE</column>
+      <column column="STUDENTS.GENDER">GENDER</column>
+      <column column="STUDENTS.DOB">DOB</column>
+      <column column="STUDENTS.DOB">RACE</column>
+      <column column="STUDENTS.DOB">HISPANIC_LATINO</column>
+      <column column="STUDENTS.DOB">ELL_STATUS</column>
+      <column column="STUDENTS.DOB">FRL_STATUS</column>
+      <column column="STUDENTS.DOB">IEP_STATUS</column>
+      <column column="STUDENTS.STREET">STUDENT_STREET</column>
+      <column column="STUDENTS.CITY">STUDENT_CITY</column>
+      <column column="STUDENTS.STATE">STUDENT_STATE</column>
+      <column column="STUDENTS.ZIP">STUDENT_ZIP</column>
+      <column column="PSM_STUDENTCONTACT.EMAIL">STUDENT_EMAIL</column>
+      <column column="STUDENTS.ZIP">CONTACT_RELATIONSHIP</column>
+      <column column="STUDENTS.ZIP">CONTACT_TYPE</column>
+      <column column="STUDENTS.ZIP">CONTACT_NAME</column>
+      <column column="STUDENTS.ZIP">CONTACT_PHONE</column>
+      <column column="STUDENTS.ZIP">CONTACT_EMAIL</column>
+      <column column="PSM_STUDENTCONTACT.EMAIL">USERNAME</column>
+      <column column="STUDENTS.STUDENT_NUMBER">PASSWORD</column>
+    </columns>
+    <sql><![CDATA[
+      select
+        s.enrollment_schoolid school_id,
+        s.id student_id,
+        to_char(s.student_number) student_number,
+        s.state_studentnumber state_id,
+        s.last_name last_name,
+        s.middle_name middle_name,
+        s.first_name first_name,
+        case s.grade_level
+          when 0 then 'Kindergarten'
+          when -1 then 'Prekindergarten'
+          else to_char(s.grade_level)
+        end grade,
+        s.gender gender,
+        to_char(s.dob, 'MM/DD/YYYY') dob,
+        '' Race,
+        '' Hispanic_latino,
+        '' ell_status,
+        '' frl_status,
+        '' iep_status,
+        s.street student_street,
+        s.city student_city,
+        s.state student_state,
+        s.zip student_zip,
+        se.email student_email,
+        '' contact_relationship,
+        '' contact_type,
+        '' contact_name,
+        '' contact_phone,
+        '' contact_email,
+        substr(se.email, 0, instr(se.email, '@')-1) username,
+        lpad(s.student_number, 8, '0') password
+      from
+        students s
+        left join (
+          select
+            s.id,
+            psc.email
+          from
+            psm_studentcontact psc
+            inner join sync_studentmap ssm
+              on psc.studentid = ssm.studentid
+            inner join students s
+              on ssm.studentsdcid = s.dcid
+            inner join psm_studentcontacttype psct
+              on psc.studentcontacttypeid = psct.id
+              and psct.name = 'Self'
+              and psc.email is not null
+        ) se
+          on se.id = s.id
+      where
+        s.schoolid not in (0, 999999, 6200, 2100, 1267, 1258, 1834)
+        and s.enroll_status = 0
+      ]]></sql>
+  </query>
+  <query name="org.billingsschools.clever.teachers" coreTable="USERS" flattened="true" tags="">
+    <summary>Clever Teachers</summary>
+    <description>Clever Teachers data</description>
+    <columns>
+      <column column="SCHOOLSTAFF.SCHOOLID">SCHOOL_ID</column>
+      <column column="SCHOOLSTAFF.ID">TEACHER_ID</column>
+      <column column="USERS.TEACHERNUMBER">TEACHER_NUMBER</column>
+      <column column="S_MT_USR_X.SEID">STATE_TEACHER_ID</column>
+      <column column="USERS.EMAIL_ADDR">TEACHER_EMAIL</column>
+      <column column="USERS.FIRST_NAME">FIRST_NAME</column>
+      <column column="USERS.FIRST_NAME">MIDDLE_NAME</column>
+      <column column="USERS.LAST_NAME">LAST_NAME</column>
+      <column column="USERS.LAST_NAME">TITLE</column>
+      <column column="USERS.EMAIL_ADDR">USERNAME</column>
+      <column column="USERS.EMAIL_ADDR">PASSWORD</column>
+    </columns>
+    <sql><![CDATA[
+      select distinct
+        ss.schoolid school_id,
+        ss.id teacher_id,
+        u.teachernumber teacher_number,
+        mt.seid state_teacher_id,
+        u.email_addr teacher_email,
+        u.first_name first_name,
+        '' middle_name,
+        u.last_name last_name,
+        '' title,
+        substr(u.email_addr, 0, instr(u.email_addr, '@')-1) username,
+        '' password
+      from
+        users u
+        left join schoolstaff ss
+          on ss.users_dcid = u.dcid
+        left join s_mt_usr_x mt
+          on mt.usersdcid = u.dcid
+      where
+        ss.schoolid not in (0, 999999, 6200, 1267, 1258, 1834)
+        and ss.staffstatus in (1,2)
+        and ss.status = 1
+        and u.last_name not in ('ETS', 'Health/Pe', 'Music', 'Team', 'Staff', 'Staff 1', 'Staff 2', 'Staff 3', 'Staff 4', 'Staff 5', 'Staff 6')
+        and u.first_name not in ('1', '2', '3', '4', '5', '6', 'staff')
       ]]></sql>
   </query>
 </queries>
