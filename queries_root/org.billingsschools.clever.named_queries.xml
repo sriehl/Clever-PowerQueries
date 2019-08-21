@@ -187,7 +187,7 @@
 
       where
         sec.schoolid not in (0, 999999, 6200, 1267, 1258, 1834)
-        and sec.course_number not in ('NC100')
+        and sec.course_number not in ('NC100', 'NC101', 'NC107')
         and (select effdate from first_day_or_today) between t.firstday and t.lastday
         and sec.no_of_students > 0
       ]]></sql>
