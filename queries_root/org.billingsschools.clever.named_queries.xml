@@ -26,13 +26,16 @@
         '' title,
         substr(u.email_addr, 0, instr(u.email_addr, '@')-1) username,
         '' password,
-        '' role
+        g.name role
       from
         users u
         left join schoolstaff ss
           on ss.users_dcid = u.dcid
         left join s_mt_usr_x mt
           on mt.usersdcid = u.dcid
+        left join gen g
+          on g.cat = 'groups'
+          and g.id = u.groupvalue
       where
         ss.schoolid not in (0, 999999, 6200, 1267, 1258, 1834)
         and u.psaccess = 1
