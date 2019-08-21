@@ -328,7 +328,7 @@
         ss.schoolid not in (0, 999999, 6200, 1267, 1258, 1834)
         and ss.staffstatus in (1,2)
         and ss.status = 1
-        and u.last_name not in ('ETS', 'Health/Pe', 'Music', 'Team', 'Staff', 'Staff 1', 'Staff 2', 'Staff 3', 'Staff 4', 'Staff 5', 'Staff 6')
+        and u.last_name not in ('ETS', 'Health/Pe', 'Team', 'Staff', 'Staff 1', 'Staff 2', 'Staff 3', 'Staff 4', 'Staff 5', 'Staff 6')
         and u.first_name not in ('1', '2', '3', '4', '5', '6', 'staff')
       ]]></sql>
   </query>
