@@ -23,7 +23,11 @@
         u.first_name first_name,
         u.last_name last_name,
         '' department,
-        '' title,
+        case
+          when u.email_addr = principals.principalemail then 'Principal'
+          when u.email_addr = principals.asstprincipalemail then 'Associate Principal'
+          else ''
+        end title,
         substr(u.email_addr, 0, instr(u.email_addr, '@')-1) username,
         '' password,
         g.name role
@@ -36,6 +40,8 @@
         left join gen g
           on g.cat = 'groups'
           and g.id = u.groupvalue
+        left join (select school_number schoolid, principalemail, asstprincipalemail from schools) principals
+          on principals.schoolid = ss.schoolid
       where
         ss.schoolid not in (0, 999999, 6200, 1267, 1258, 1834)
         and u.psaccess = 1
