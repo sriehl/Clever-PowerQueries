@@ -286,7 +286,7 @@
           on se.id = s.id
       where
         s.schoolid not in (0, 999999, 6200, 2100, 1267, 1258, 1834)
-        and s.enroll_status = 0
+        and s.enroll_status in (0, -1)
       ]]></sql>
   </query>
   <query name="org.billingsschools.clever.teachers" coreTable="USERS" flattened="true" tags="">
