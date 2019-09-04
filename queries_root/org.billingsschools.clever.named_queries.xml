@@ -230,10 +230,84 @@
       <column column="STUDENTS.ZIP">CONTACT_NAME</column>
       <column column="STUDENTS.ZIP">CONTACT_PHONE</column>
       <column column="STUDENTS.ZIP">CONTACT_EMAIL</column>
+      <column column="STUDENTS.ZIP">CONTACT_SIS_ID</column>
       <column column="PSM_STUDENTCONTACT.EMAIL">USERNAME</column>
       <column column="STUDENTS.STUDENT_NUMBER">PASSWORD</column>
     </columns>
     <sql><![CDATA[
+      with sr as (
+        select
+          studentid,
+          case racecd
+            when '01' then 'I'
+            when '02' then 'A'
+            when '04' then 'B'
+            when '05' then 'W'
+            when '06' then 'P'
+          end race
+        from
+          studentrace
+      ),
+      se as (
+        select
+          ssm.studentsdcid,
+          psc.email
+        from
+          psm_studentcontact psc
+          inner join sync_studentmap ssm
+            on psc.studentid = ssm.studentid
+          inner join psm_studentcontacttype psct
+            on psc.studentcontacttypeid = psct.id
+            and psct.name = 'Self'
+            and psc.email is not null
+      ),
+      phones as (
+        select
+            persondcid
+          , phonenumber
+          , case phonetype
+              when 'Mobile' then 'Cell'
+              when 'Home' then 'Home'
+              when 'Work' then 'Work'
+              when 'Daytime' then 'Home'
+              else 'Home'
+            end phonetype
+          , dense_rank() over (partition by persondcid order by ispreferred desc, phonenumberpriorityorder) as phnrank
+        from
+          pssis_person_phone
+
+        where
+          phonenumberext is null
+      ),
+      contacts as (
+        select
+            stucon.studentdcid
+          , stucon.currcontactrelationship contact_relationship
+          , case
+              when stucon.iscustodial = 1 then 'family'
+              when stucon.liveswithflg = 1 then 'lives-with'
+              when stucon.isemergency = 1 then 'emergency'
+            end contact_type
+          , stucon.contactfirstname || ' ' || stucon.contactlastname contact_name
+          , phones.phonenumber contact_phone
+          , phones.phonetype contact_phone_type
+          , stucon.contactpersondcid
+        from
+          pssis_stu_contact_act stucon
+          left join phones
+            on phones.persondcid = stucon.contactpersondcid
+            and phones.phnrank = 1
+        where
+          stucon.isactive = 1
+          and (
+               stucon.isemergency = 1
+            or stucon.iscustodial = 1
+            or stucon.liveswithflg = 1
+          )
+        order by
+          stucon.contactpriorityorder
+      )
+
       select
         s.enrollment_schoolid school_id,
         s.id student_id,
@@ -249,41 +323,38 @@
         end grade,
         s.gender gender,
         to_char(s.dob, 'MM/DD/YYYY') dob,
-        '' Race,
-        '' Hispanic_latino,
+        case when (select count(1) from sr where studentid = s.id) > 1 then 'M' else (select race from sr where studentid = s.id) end Race,
+        case when s.fedethnicity = 1 then 'Y' else 'N' end Hispanic_latino,
         '' ell_status,
-        '' frl_status,
-        '' iep_status,
+        case s.lunchstatus
+          when 'F' then 'F'
+          when 'R' then 'R'
+          else 'N'
+        end frl_status,
+        case when stateprogext.speceducflag = 1 then 'Y' else 'N' end iep_status,
         s.street student_street,
         s.city student_city,
         s.state student_state,
         s.zip student_zip,
         se.email student_email,
-        '' contact_relationship,
-        '' contact_type,
-        '' contact_name,
-        '' contact_phone,
+        contacts.contact_relationship,
+        contacts.contact_type,
+        contacts.contact_name contact_name,
+        contacts.contact_phone contact_phone,
         '' contact_email,
+        contacts.contactpersondcid contact_sis_id,
         substr(se.email, 0, instr(se.email, '@')-1) username,
         lpad(s.student_number, 8, '0') password
       from
         students s
-        left join (
-          select
-            s.id,
-            psc.email
-          from
-            psm_studentcontact psc
-            inner join sync_studentmap ssm
-              on psc.studentid = ssm.studentid
-            inner join students s
-              on ssm.studentsdcid = s.dcid
-            inner join psm_studentcontacttype psct
-              on psc.studentcontacttypeid = psct.id
-              and psct.name = 'Self'
-              and psc.email is not null
-        ) se
-          on se.id = s.id
+        left join s_mt_stu_programs_x stateprogext
+          on stateprogext.studentsdcid = s.dcid
+        left join (select * from se) se
+          on se.studentsdcid = s.dcid
+        left join (select * from contacts) contacts
+          on contacts.studentdcid = s.dcid
+          and contacts.contact_name != ' '
+
       where
         s.schoolid not in (0, 999999, 6200, 2100, 1267, 1258, 1834)
         and s.enroll_status in (0, -1)
