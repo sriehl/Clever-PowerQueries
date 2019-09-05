@@ -164,13 +164,24 @@
           t.id = (extract(year from sysdate) + case when extract(month from sysdate) >= 7 then 1 else 0 end - 1991) * 100
           and t.schoolid = 0
           and t.isyearrec = 1
+      ),
+      extra_teachers as (
+        select
+          sectionid,
+          teacherid,
+          dense_rank() over (partition by sectionid order by allocation desc) as trank
+        from
+          sectionteacher
+        where
+          roleid != 21
+          and sysdate between start_date and end_date
       )
 
       select
         sec.schoolid school_id,
         sec.id section_id,
         sec.teacher teacher_id,
-        '' teacher_2_id,
+        extra_teachers.teacherid teacher_2_id,
         '' teacher_3_id,
         '' teacher_4_id,
         sch.abbreviation || ': ' || c.course_name || ' section ' || sec.section_number name,
@@ -193,6 +204,9 @@
           on sch.school_number = sec.schoolid
         left join terms t
           on t.id = sec.termid and t.schoolid = sec.schoolid
+        left join extra_teachers
+          on extra_teachers.sectionid = sec.id
+          and extra_teachers.trank = 1
 
       where
         sec.schoolid not in (0, 999999, 6200, 1267, 1258, 1834)
