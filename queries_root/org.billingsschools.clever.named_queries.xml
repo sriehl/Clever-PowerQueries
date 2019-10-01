@@ -312,11 +312,18 @@
             on phones.persondcid = stucon.contactpersondcid
             and phones.phnrank = 1
         where
-          stucon.isactive = 1
-          and (
+          (
                stucon.isemergency = 1
             or stucon.iscustodial = 1
             or stucon.liveswithflg = 1
+          )
+          and (
+               stucon.relationshipstartdate is null
+            or stucon.relationshipstartdate <= sysdate
+          )
+          and (
+               stucon.relationshipenddate is null
+            or stucon.relationshipenddate >= sysdate
           )
         order by
           stucon.contactpriorityorder
