@@ -213,6 +213,8 @@
         and sec.course_number not in ('NC100', 'NC101', 'NC107')
         and (select effdate from first_day_or_today) between t.firstday and t.lastday
         and sec.no_of_students > 0
+        and sec.external_expression not like 'OA%'
+        and sec.external_expression not like 'OL%'
       ]]></sql>
   </query>
   <query name="org.billingsschools.clever.students" coreTable="STUDENTS" flattened="true" tags="">
@@ -398,30 +400,57 @@
       <column column="USERS.EMAIL_ADDR">PASSWORD</column>
     </columns>
     <sql><![CDATA[
+      with first_day_or_today as (
+        select
+          case
+            when t.firstday > sysdate then t.firstday
+            else sysdate
+          end effdate
+        from
+          terms t
+        where
+          t.id = (extract(year from sysdate) + case when extract(month from sysdate) >= 7 then 1 else 0 end - 1991) * 100
+          and t.schoolid = 0
+          and t.isyearrec = 1
+      )
+
       select distinct
-        ss.schoolid school_id,
-        ss.id teacher_id,
-        u.teachernumber teacher_number,
-        mt.seid state_teacher_id,
-        u.email_addr teacher_email,
-        u.first_name first_name,
-        '' middle_name,
-        u.last_name last_name,
-        '' title,
-        substr(u.email_addr, 0, instr(u.email_addr, '@')-1) username,
-        '' password
+          ss.schoolid school_id
+        , ss.id teacher_id
+        , u.teachernumber teacher_number
+        , mt.seid state_teacher_id
+        , u.email_addr teacher_email
+        , u.first_name first_name
+        , '' middle_name
+        , u.last_name last_name
+        , '' title
+        , substr(u.email_addr, 0, instr(u.email_addr, '@')-1) username
+        , '' password
+
       from
         users u
         left join schoolstaff ss
           on ss.users_dcid = u.dcid
         left join s_mt_usr_x mt
           on mt.usersdcid = u.dcid
+        left join sections
+          on sections.teacher = ss.id
+        left join terms
+          on terms.id = sections.termid and terms.schoolid = sections.schoolid
+
       where
-        ss.schoolid not in (0, 999999, 6200, 1267, 1258, 1834)
+            ss.schoolid not in (0, 999999, 6200, 1267, 1258, 1834)
         and ss.staffstatus in (1,2)
         and ss.status = 1
         and u.last_name not in ('ETS', 'Health/Pe', 'Team', 'Staff', 'Staff 1', 'Staff 2', 'Staff 3', 'Staff 4', 'Staff 5', 'Staff 6')
         and u.first_name not in ('1', '2', '3', '4', '5', '6', 'staff')
+
+        and sections.schoolid not in (0, 999999, 6200, 1267, 1258, 1834)
+        and sections.course_number not in ('NC100', 'NC101', 'NC107')
+        and sections.no_of_students > 0
+        and sections.external_expression not like 'OA%'
+        and sections.external_expression not like 'OL%'
+        and (select effdate from first_day_or_today) between terms.firstday and terms.lastday
       ]]></sql>
   </query>
 </queries>
