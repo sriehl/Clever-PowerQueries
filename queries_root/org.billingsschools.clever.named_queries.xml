@@ -168,8 +168,9 @@
       extra_teachers as (
         select
           sectionid,
+          allocation,
           teacherid,
-          dense_rank() over (partition by sectionid order by allocation desc) as trank
+          rank() over( partition by sectionid order by allocation desc, teacherid) trank
         from
           sectionteacher
         where
@@ -181,9 +182,9 @@
         sec.schoolid school_id,
         sec.id section_id,
         sec.teacher teacher_id,
-        extra_teachers.teacherid teacher_2_id,
-        '' teacher_3_id,
-        '' teacher_4_id,
+        extra_teachers_2.teacherid teacher_2_id,
+        extra_teachers_3.teacherid teacher_3_id,
+        extra_teachers_4.teacherid teacher_4_id,
         sch.abbreviation || ': ' || c.course_name || ' section ' || sec.section_number name,
         sec.section_number,
         '' grade,
@@ -204,9 +205,15 @@
           on sch.school_number = sec.schoolid
         left join terms t
           on t.id = sec.termid and t.schoolid = sec.schoolid
-        left join extra_teachers
-          on extra_teachers.sectionid = sec.id
-          and extra_teachers.trank = 1
+        left join extra_teachers extra_teachers_2
+          on extra_teachers_2.sectionid = sec.id
+          and extra_teachers_2.trank = 1
+        left join extra_teachers extra_teachers_3
+          on extra_teachers_3.sectionid = sec.id
+          and extra_teachers_3.trank = 2
+        left join extra_teachers extra_teachers_4
+          on extra_teachers_4.sectionid = sec.id
+          and extra_teachers_4.trank = 3
 
       where
         sec.schoolid not in (0, 999999, 6200, 1267, 1258, 1834)
@@ -403,54 +410,65 @@
       with first_day_or_today as (
         select
           case
-            when t.firstday > sysdate then t.firstday
+            when terms.firstday > sysdate then terms.firstday
             else sysdate
           end effdate
+
         from
-          terms t
+          terms
+
         where
-          t.id = (extract(year from sysdate) + case when extract(month from sysdate) >= 7 then 1 else 0 end - 1991) * 100
-          and t.schoolid = 0
-          and t.isyearrec = 1
+          terms.id = (extract(year from sysdate) + case when extract(month from sysdate) >= 7 then 1 else 0 end - 1991) * 100
+          and terms.schoolid = 0
+          and terms.isyearrec = 1
+
+      )
+      , included_teachers as (
+        select distinct
+          sectionteacher.teacherid
+
+        from
+          sections
+          left join courses
+            on courses.course_number = sections.course_number
+          left join schools
+            on schools.school_number = sections.schoolid
+          left join terms
+            on terms.id = sections.termid and terms.schoolid = sections.schoolid
+          left join sectionteacher
+            on sectionteacher.sectionid = sections.id
+
+        where
+              sections.schoolid not in (0, 999999, 6200, 1267, 1258, 1834)
+          and sections.course_number not in ('NC100', 'NC101', 'NC107')
+          and (select effdate from first_day_or_today) between terms.firstday and terms.lastday
+          and sections.no_of_students > 0
+          and sections.external_expression not like 'OA%'
+          and sections.external_expression not like 'OL%'
+
       )
 
-      select distinct
-          ss.schoolid school_id
-        , ss.id teacher_id
-        , u.teachernumber teacher_number
-        , mt.seid state_teacher_id
-        , u.email_addr teacher_email
-        , u.first_name first_name
+      select
+          schoolstaff.schoolid
+        , schoolstaff.id teacher_id
+        , users.teachernumber teacher_number
+        , s_mt_usr_x.seid state_teacher_id
+        , users.email_addr teacher_email
+        , users.first_name first_name
         , '' middle_name
-        , u.last_name last_name
+        , users.last_name last_name
         , '' title
-        , substr(u.email_addr, 0, instr(u.email_addr, '@')-1) username
+        , substr(users.email_addr, 0, instr(users.email_addr, '@')-1) username
         , '' password
 
       from
-        users u
-        left join schoolstaff ss
-          on ss.users_dcid = u.dcid
-        left join s_mt_usr_x mt
-          on mt.usersdcid = u.dcid
-        left join sections
-          on sections.teacher = ss.id
-        left join terms
-          on terms.id = sections.termid and terms.schoolid = sections.schoolid
-
-      where
-            ss.schoolid not in (0, 999999, 6200, 1267, 1258, 1834)
-        and ss.staffstatus in (1,2)
-        and ss.status = 1
-        and u.last_name not in ('ETS', 'Health/Pe', 'Team', 'Staff', 'Staff 1', 'Staff 2', 'Staff 3', 'Staff 4', 'Staff 5', 'Staff 6')
-        and u.first_name not in ('1', '2', '3', '4', '5', '6', 'staff')
-
-        and sections.schoolid not in (0, 999999, 6200, 1267, 1258, 1834)
-        and sections.course_number not in ('NC100', 'NC101', 'NC107')
-        and sections.no_of_students > 0
-        and sections.external_expression not like 'OA%'
-        and sections.external_expression not like 'OL%'
-        and (select effdate from first_day_or_today) between terms.firstday and terms.lastday
+        (select * from included_teachers) included_teachers
+        left join schoolstaff
+          on schoolstaff.id = included_teachers.teacherid
+        left join users
+          on users.dcid = schoolstaff.users_dcid
+        left join s_mt_usr_x
+          on s_mt_usr_x.usersdcid = users.dcid
       ]]></sql>
   </query>
 </queries>
