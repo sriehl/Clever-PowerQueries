@@ -26,6 +26,7 @@
         case
           when u.email_addr = principals.principalemail then 'Principal'
           when u.email_addr = principals.asstprincipalemail then 'Associate Principal'
+          when u.groupvalue = 10 then 'Special Education'
           else ''
         end title,
         substr(u.email_addr, 0, instr(u.email_addr, '@')-1) username,
