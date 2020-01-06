@@ -86,7 +86,7 @@
       from
         cc
       where
-        cc.schoolid not in (0, 999999, 6200, 1267, 1258, 1834)
+        cc.schoolid not in (0, 999999, 6200, 1267, 1258, 1834, 79438)
         and cc.dateenrolled <= (select effdate from first_day_or_today)
         and cc.dateleft > (select effdate from first_day_or_today)
         and cc.sectionid > 0
@@ -128,7 +128,7 @@
       from
         schools sch
       where
-        sch.school_number not in (0, 999999, 6200, 1267, 1258, 1834)
+        sch.school_number not in (0, 999999, 6200, 1267, 1258, 1834, 79438)
       ]]></sql>
   </query>
   <query name="org.billingsschools.clever.sections" coreTable="SECTIONS" flattened="true" tags="">
@@ -218,7 +218,7 @@
           and extra_teachers_4.trank = 3
 
       where
-        sec.schoolid not in (0, 999999, 6200, 1267, 1258, 1834)
+        sec.schoolid not in (0, 999999, 6200, 1267, 1258, 1834, 79438)
         and sec.course_number not in ('NC100', 'NC101', 'NC107')
         and (select effdate from first_day_or_today) between t.firstday and t.lastday
         and sec.no_of_students > 0
@@ -388,7 +388,7 @@
           and contacts.contact_name != ' '
 
       where
-        s.schoolid not in (0, 999999, 6200, 2100, 1267, 1258, 1834)
+        s.schoolid not in (0, 999999, 6200, 2100, 1267, 1258, 1834, 79438)
         and s.enroll_status in (0, -1)
       ]]></sql>
   </query>
@@ -441,7 +441,7 @@
             on sectionteacher.sectionid = sections.id
 
         where
-              sections.schoolid not in (0, 999999, 6200, 1267, 1258, 1834)
+              sections.schoolid not in (0, 999999, 6200, 1267, 1258, 1834, 79438)
           and sections.course_number not in ('NC100', 'NC101', 'NC107')
           and (select effdate from first_day_or_today) between terms.firstday and terms.lastday
           and sections.no_of_students > 0
