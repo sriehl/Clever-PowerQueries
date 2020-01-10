@@ -87,8 +87,8 @@
         cc
       where
         cc.schoolid not in (0, 999999, 6200, 1267, 1258, 1834, 79438)
-        and cc.dateenrolled <= (select effdate from first_day_or_today)
-        and cc.dateleft > (select effdate from first_day_or_today)
+        and cc.dateenrolled <= (select effdate + 5 from first_day_or_today)
+        and cc.dateleft > (select effdate - 5 from first_day_or_today)
         and cc.sectionid > 0
       ]]></sql>
   </query>
@@ -220,7 +220,9 @@
       where
         sec.schoolid not in (0, 999999, 6200, 1267, 1258, 1834, 79438)
         and sec.course_number not in ('NC100', 'NC101', 'NC107')
-        and (select effdate from first_day_or_today) between t.firstday and t.lastday
+        --and (select effdate from first_day_or_today) between t.firstday and t.lastday
+        and t.firstday <= (select effdate + 5 from first_day_or_today)
+        and t.lastday > (select effdate - 5 from first_day_or_today)
         and sec.no_of_students > 0
         and sec.external_expression not like 'OA%'
         and sec.external_expression not like 'OL%'
@@ -443,7 +445,9 @@
         where
               sections.schoolid not in (0, 999999, 6200, 1267, 1258, 1834, 79438)
           and sections.course_number not in ('NC100', 'NC101', 'NC107')
-          and (select effdate from first_day_or_today) between terms.firstday and terms.lastday
+          -- and (select effdate from first_day_or_today) between terms.firstday and terms.lastday
+          and terms.firstday <= (select effdate + 5 from first_day_or_today)
+          and terms.lastday > (select effdate - 5 from first_day_or_today)
           and sections.no_of_students > 0
           and sections.external_expression not like 'OA%'
           and sections.external_expression not like 'OL%'
