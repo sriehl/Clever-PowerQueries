@@ -137,10 +137,10 @@
     <columns>
       <column column="SECTIONS.SCHOOLID">SCHOOL_ID</column>
       <column column="SECTIONS.ID">SECTION_ID</column>
-      <column column="SECTIONS.TEACHER">TEACHER_ID</column>
-      <column column="SECTIONS.TEACHER">TEACHER_2_ID</column>
-      <column column="SECTIONS.TEACHER">TEACHER_3_ID</column>
-      <column column="SECTIONS.TEACHER">TEACHER_4_ID</column>
+      <column column="USERS.DCID">TEACHER_ID</column>
+      <column column="USERS.DCID">TEACHER_2_ID</column>
+      <column column="USERS.DCID">TEACHER_3_ID</column>
+      <column column="USERS.DCID">TEACHER_4_ID</column>
       <column column="COURSES.COURSE_NAME">NAME</column>
       <column column="SECTIONS.SECTION_NUMBER">SECTION_NUMBER</column>
       <column column="SECTIONS.SECTION_NUMBER">GRADE</column>
@@ -169,24 +169,26 @@
       ),
       extra_teachers as (
         select
-          sectionid,
-          allocation,
-          teacherid,
-          rank() over( partition by sectionid order by allocation desc, teacherid) trank
+          sectionteacher.sectionid,
+          sectionteacher.allocation,
+          schoolstaff.users_dcid,
+          rank() over( partition by sectionteacher.sectionid order by sectionteacher.allocation desc, sectionteacher.teacherid) trank
         from
           sectionteacher
+          left join schoolstaff
+            on schoolstaff.id = sectionteacher.teacherid
         where
-          roleid != 21
-          and sysdate between start_date and end_date
+          sectionteacher.roleid != 21
+          and (select effdate from first_day_or_today) between sectionteacher.start_date and sectionteacher.end_date
       )
 
       select
         sec.schoolid school_id,
         sec.id section_id,
-        sec.teacher teacher_id,
-        extra_teachers_2.teacherid teacher_2_id,
-        extra_teachers_3.teacherid teacher_3_id,
-        extra_teachers_4.teacherid teacher_4_id,
+        schoolstaff.users_dcid teacher_id,
+        extra_teachers_2.users_dcid teacher_2_id,
+        extra_teachers_3.users_dcid teacher_3_id,
+        extra_teachers_4.users_dcid teacher_4_id,
         sch.abbreviation || ': ' || c.course_name || ' section ' || sec.section_number name,
         sec.section_number,
         '' grade,
@@ -207,13 +209,15 @@
           on sch.school_number = sec.schoolid
         left join terms t
           on t.id = sec.termid and t.schoolid = sec.schoolid
-        left join extra_teachers extra_teachers_2
+        left join schoolstaff
+          on schoolstaff.id = sec.teacher
+        left join (select * from extra_teachers) extra_teachers_2
           on extra_teachers_2.sectionid = sec.id
           and extra_teachers_2.trank = 1
-        left join extra_teachers extra_teachers_3
+        left join (select * from extra_teachers) extra_teachers_3
           on extra_teachers_3.sectionid = sec.id
           and extra_teachers_3.trank = 2
-        left join extra_teachers extra_teachers_4
+        left join (select * from extra_teachers) extra_teachers_4
           on extra_teachers_4.sectionid = sec.id
           and extra_teachers_4.trank = 3
 
@@ -326,8 +330,7 @@
             and phones.phnrank = 1
         where
           (
-               stucon.isemergency = 1
-            or stucon.iscustodial = 1
+            stucon.iscustodial = 1
             or stucon.liveswithflg = 1
           )
           and (
@@ -399,7 +402,7 @@
     <description>Clever Teachers data</description>
     <columns>
       <column column="SCHOOLSTAFF.SCHOOLID">SCHOOL_ID</column>
-      <column column="SCHOOLSTAFF.ID">TEACHER_ID</column>
+      <column column="USERS.DCID">TEACHER_ID</column>
       <column column="USERS.TEACHERNUMBER">TEACHER_NUMBER</column>
       <column column="S_MT_USR_X.SEID">STATE_TEACHER_ID</column>
       <column column="USERS.EMAIL_ADDR">TEACHER_EMAIL</column>
@@ -414,6 +417,7 @@
       with first_day_or_today as (
         select
           case
+            when 1=1 then date'2020-05-24'
             when terms.firstday > sysdate then terms.firstday
             else sysdate
           end effdate
@@ -451,13 +455,13 @@
           and sections.no_of_students > 0
           and sections.external_expression not like 'OA%'
           and sections.external_expression not like 'OL%'
-          and sectionteacher.end_date >= sysdate
+          and sectionteacher.end_date >= (select effdate from first_day_or_today)
 
       )
 
       select
           schoolstaff.schoolid
-        , schoolstaff.id teacher_id
+        , users.dcid teacher_id
         , users.teachernumber teacher_number
         , s_mt_usr_x.seid state_teacher_id
         , users.email_addr teacher_email
