@@ -85,11 +85,15 @@
         cc.studentid student_id
       from
         cc
+        left join students
+          on students.id = cc.studentid
       where
         cc.schoolid not in (0, 999999, 6200, 1267, 1258, 1834, 79438)
         and cc.dateenrolled <= (select effdate + 5 from first_day_or_today)
         and cc.dateleft > (select effdate - 5 from first_day_or_today)
         and cc.sectionid > 0
+        and students.enroll_status in (-1, 0)
+        and students.schoolid not in (79438)
       ]]></sql>
   </query>
   <query name="org.billingsschools.clever.schools" coreTable="SCHOOLS" flattened="true" tags="">
@@ -318,6 +322,7 @@
               when stucon.iscustodial = 1 then 'family'
               when stucon.liveswithflg = 1 then 'lives-with'
               when stucon.isemergency = 1 then 'emergency'
+              else 'other'
             end contact_type
           , stucon.contactfirstname || ' ' || stucon.contactlastname contact_name
           , phones.phonenumber contact_phone
