@@ -328,11 +328,14 @@
           left join phones
             on phones.persondcid = stucon.contactpersondcid
             and phones.phnrank = 1
+          left join guardianpersonassoc
+            on guardianpersonassoc.personid = stucon.contactpersonid
+          left join guardianstudent
+            on guardianstudent.guardianid = guardianpersonassoc.guardianid
+            and guardianstudent.studentsdcid = stucon.studentdcid
         where
-          (
-            stucon.iscustodial = 1
-            or stucon.liveswithflg = 1
-          )
+          stucon.contactfirstname is not null
+          and guardianstudent.guardianstudentid is not null
           and (
                stucon.relationshipstartdate is null
             or stucon.relationshipstartdate <= sysdate
@@ -417,7 +420,6 @@
       with first_day_or_today as (
         select
           case
-            when 1=1 then date'2020-05-24'
             when terms.firstday > sysdate then terms.firstday
             else sysdate
           end effdate
@@ -459,7 +461,7 @@
 
       )
 
-      select
+      select distinct
           schoolstaff.schoolid
         , users.dcid teacher_id
         , users.teachernumber teacher_number
@@ -480,6 +482,8 @@
           on users.dcid = schoolstaff.users_dcid
         left join s_mt_usr_x
           on s_mt_usr_x.usersdcid = users.dcid
+      where
+        users.homeschoolid = schoolstaff.schoolid
       ]]></sql>
   </query>
 </queries>
