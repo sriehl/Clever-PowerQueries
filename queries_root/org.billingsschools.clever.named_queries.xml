@@ -402,6 +402,7 @@
 
       where
         s.schoolid not in (0, 999999, 6200, 2100, 1267, 1258, 1834, 79438)
+        and s.enrollment_schoolid not in (0, 999999, 6200, 2100, 1267, 1258, 1834, 79438)
         and s.enroll_status in (0, -1)
       ]]></sql>
   </query>
