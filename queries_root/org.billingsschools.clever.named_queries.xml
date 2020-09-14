@@ -80,20 +80,26 @@
       )
 
       select
-        cc.schoolid school_id,
-        cc.sectionid section_id,
-        cc.studentid student_id
+          case
+            when cc.schoolid = 1258 and students.grade_level <= 5 then 1439
+            when cc.schoolid = 1258 and students.grade_level between 6 and 8 then 1632
+            when cc.schoolid = 1258 and students.grade_level >= 9 then 1628
+            else cc.schoolid
+          end school_id
+        , cc.sectionid section_id
+        , cc.studentid student_id
       from
         cc
         left join students
           on students.id = cc.studentid
       where
-        cc.schoolid not in (0, 999999, 6200, 1267, 1258, 1834, 79438)
+        cc.schoolid not in (0, 999999, 6200, 1267, 1834, 79438)
         and cc.dateenrolled <= (select effdate + 5 from first_day_or_today)
         and cc.dateleft > (select effdate - 5 from first_day_or_today)
         and cc.sectionid > 0
         and students.enroll_status in (-1, 0)
         and students.schoolid not in (79438)
+        and students.grade_level >= 0
       ]]></sql>
   </query>
   <query name="org.billingsschools.clever.schools" coreTable="SCHOOLS" flattened="true" tags="">
@@ -187,23 +193,28 @@
       )
 
       select
-        sec.schoolid school_id,
-        sec.id section_id,
-        schoolstaff.users_dcid teacher_id,
-        extra_teachers_2.users_dcid teacher_2_id,
-        extra_teachers_3.users_dcid teacher_3_id,
-        extra_teachers_4.users_dcid teacher_4_id,
-        sch.abbreviation || ': ' || c.course_name || ' section ' || sec.section_number name,
-        sec.section_number,
-        '' grade,
-        c.course_name,
-        c.course_number,
-        '' course_description,
-        substr(sec.expression, 0, instr(sec.expression, '(')-1) period,
-        '' subject,
-        t.abbreviation term_name,
-        to_char(t.firstday, 'MM/DD/YYYY') term_start,
-        to_char(t.lastday, 'MM/DD/YYYY') term_end
+          case
+            when sec.schoolid = 1258 and (select max(students.grade_level) from cc left join students on students.id = cc.studentid where cc.sectionid = sec.id group by cc.sectionid) <= 5 then 1439
+            when sec.schoolid = 1258 and (select max(students.grade_level) from cc left join students on students.id = cc.studentid where cc.sectionid = sec.id group by cc.sectionid) <= 8 then 1632
+            when sec.schoolid = 1258 then 1628
+            else sec.schoolid
+          end school_id
+        , sec.id section_id
+        , schoolstaff.users_dcid teacher_id
+        , extra_teachers_2.users_dcid teacher_2_id
+        , extra_teachers_3.users_dcid teacher_3_id
+        , extra_teachers_4.users_dcid teacher_4_id
+        , sch.abbreviation || ': ' || c.course_name || ' section ' || sec.section_number name
+        , sec.section_number
+        , '' grade
+        , c.course_name
+        , c.course_number
+        , '' course_description
+        , substr(sec.expression, 0, instr(sec.expression, '(')-1) period
+        , '' subject
+        , t.abbreviation term_name
+        , to_char(t.firstday, 'MM/DD/YYYY') term_start
+        , to_char(t.lastday, 'MM/DD/YYYY') term_end
 
       from
         sections sec
@@ -226,7 +237,7 @@
           and extra_teachers_4.trank = 3
 
       where
-        sec.schoolid not in (0, 999999, 6200, 1267, 1258, 1834, 79438)
+        sec.schoolid not in (0, 999999, 6200, 1267, 1834, 79438)
         and sec.course_number not in ('NC100', 'NC101', 'NC107')
         --and (select effdate from first_day_or_today) between t.firstday and t.lastday
         and t.firstday <= (select effdate + 5 from first_day_or_today)
@@ -441,8 +452,13 @@
       )
       , included_teachers as (
         select distinct
-          sectionteacher.teacherid
-
+            sectionteacher.teacherid
+          , case
+            when sections.schoolid = 1258 and (select max(students.grade_level) from cc left join students on students.id = cc.studentid where cc.sectionid = sections.id group by cc.sectionid) <= 5 then 1439
+            when sections.schoolid = 1258 and (select max(students.grade_level) from cc left join students on students.id = cc.studentid where cc.sectionid = sections.id group by cc.sectionid) <= 8 then 1632
+            when sections.schoolid = 1258 then 1628
+            else sections.schoolid
+          end schoolid
         from
           sections
           left join courses
@@ -455,7 +471,7 @@
             on sectionteacher.sectionid = sections.id
 
         where
-              sections.schoolid not in (0, 999999, 6200, 1267, 1258, 1834, 79438)
+              sections.schoolid not in (0, 999999, 6200, 1267, 1834, 79438)
           and sections.course_number not in ('NC100', 'NC101', 'NC107')
           -- and (select effdate from first_day_or_today) between terms.firstday and terms.lastday
           and terms.firstday <= (select effdate + 5 from first_day_or_today)
@@ -467,29 +483,49 @@
 
       )
 
-      select distinct
-          schoolstaff.schoolid
-        , users.dcid teacher_id
-        , users.teachernumber teacher_number
-        , s_mt_usr_x.seid state_teacher_id
-        , users.email_addr teacher_email
-        , users.first_name first_name
-        , '' middle_name
-        , users.last_name last_name
-        , '' title
-        , substr(users.email_addr, 0, instr(users.email_addr, '@')-1) username
-        , '' password
+      , all_teachers as (
+        select distinct
+            included_teachers.schoolid
+          , users.dcid teacher_id
+          , users.teachernumber teacher_number
+          , s_mt_usr_x.seid state_teacher_id
+          , users.email_addr teacher_email
+          , users.first_name first_name
+          , '' middle_name
+          , users.last_name last_name
+          , '' title
+          , substr(users.email_addr, 0, instr(users.email_addr, '@')-1) username
+          , '' password
+          , rank() over (partition by users.dcid order by included_teachers.schoolid) rnk
 
+        from
+          (select * from included_teachers) included_teachers
+          left join schoolstaff
+            on schoolstaff.id = included_teachers.teacherid
+          left join users
+            on users.dcid = schoolstaff.users_dcid
+          left join s_mt_usr_x
+            on s_mt_usr_x.usersdcid = users.dcid
+        where
+          users.email_addr is not null
+      )
+
+      select
+          schoolid
+        , teacher_id
+        , teacher_number
+        , state_teacher_id
+        , teacher_email
+        , first_name
+        , middle_name
+        , last_name
+        , title
+        , username
+        , password
       from
-        (select * from included_teachers) included_teachers
-        left join schoolstaff
-          on schoolstaff.id = included_teachers.teacherid
-        left join users
-          on users.dcid = schoolstaff.users_dcid
-        left join s_mt_usr_x
-          on s_mt_usr_x.usersdcid = users.dcid
+        all_teachers
       where
-        users.homeschoolid = schoolstaff.schoolid
+        rnk = 1
       ]]></sql>
   </query>
 </queries>
