@@ -243,8 +243,13 @@
         and t.firstday <= (select effdate + 5 from first_day_or_today)
         and t.lastday > (select effdate - 5 from first_day_or_today)
         and sec.no_of_students > 0
-        and sec.external_expression not like 'OA%'
-        and sec.external_expression not like 'OL%'
+        and (
+          (
+                sec.external_expression not like 'OA%'
+            and sec.external_expression not like 'OL%'
+          )
+          or sec.course_number in ('IN100')
+        )
       ]]></sql>
   </query>
   <query name="org.billingsschools.clever.students" coreTable="STUDENTS" flattened="true" tags="">
