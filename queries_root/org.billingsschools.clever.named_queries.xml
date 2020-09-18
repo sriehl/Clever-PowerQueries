@@ -248,7 +248,7 @@
                 sec.external_expression not like 'OA%'
             and sec.external_expression not like 'OL%'
           )
-          or sec.course_number in ('IN100')
+          or sec.course_number in ('IN100','NC200') -- Interventions
         )
       ]]></sql>
   </query>
@@ -482,9 +482,14 @@
           and terms.firstday <= (select effdate + 5 from first_day_or_today)
           and terms.lastday > (select effdate - 5 from first_day_or_today)
           and sections.no_of_students > 0
-          and sections.external_expression not like 'OA%'
-          and sections.external_expression not like 'OL%'
           and sectionteacher.end_date >= (select effdate from first_day_or_today)
+          and (
+            (
+                  sections.external_expression not like 'OA%'
+              and sections.external_expression not like 'OL%'
+            )
+            or sections.course_number in ('IN100','NC200') -- Interventions
+          )
 
       )
 
