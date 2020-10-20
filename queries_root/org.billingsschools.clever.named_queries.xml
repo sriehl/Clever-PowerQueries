@@ -54,7 +54,7 @@
       order by
         u.last_name,
         u.first_name
-      ]]></sql>
+      ]]>    </sql>
   </query>
   <query name="org.billingsschools.clever.enrollments" coreTable="CC" flattened="true" tags="">
     <summary>Clever Enrollments</summary>
@@ -100,7 +100,7 @@
         and students.enroll_status in (-1, 0)
         and students.schoolid not in (79438)
         and students.grade_level >= 0
-      ]]></sql>
+      ]]>    </sql>
   </query>
   <query name="org.billingsschools.clever.schools" coreTable="SCHOOLS" flattened="true" tags="">
     <summary>Clever Schools</summary>
@@ -139,7 +139,7 @@
         schools sch
       where
         sch.school_number not in (0, 999999, 6200, 1267, 1258, 1834, 79438)
-      ]]></sql>
+      ]]>    </sql>
   </query>
   <query name="org.billingsschools.clever.sections" coreTable="SECTIONS" flattened="true" tags="">
     <summary>Clever Sections</summary>
@@ -250,7 +250,7 @@
           )
           or sec.course_number in ('IN100','NC200') -- Interventions
         )
-      ]]></sql>
+      ]]>    </sql>
   </query>
   <query name="org.billingsschools.clever.students" coreTable="STUDENTS" flattened="true" tags="">
     <summary>Clever Students</summary>
@@ -420,7 +420,7 @@
         s.schoolid not in (0, 999999, 6200, 2100, 1267, 1258, 1834, 79438)
         and s.enrollment_schoolid not in (0, 999999, 6200, 2100, 1267, 1258, 1834, 79438)
         and s.enroll_status in (0, -1)
-      ]]></sql>
+      ]]>    </sql>
   </query>
   <query name="org.billingsschools.clever.teachers" coreTable="USERS" flattened="true" tags="">
     <summary>Clever Teachers</summary>
@@ -482,7 +482,7 @@
           and terms.firstday <= (select effdate + 5 from first_day_or_today)
           and terms.lastday > (select effdate - 5 from first_day_or_today)
           and sections.no_of_students > 0
-          and sectionteacher.end_date >= (select effdate from first_day_or_today)
+          and sectionteacher.end_date + 1 >= (select effdate from first_day_or_today)
           and (
             (
                   sections.external_expression not like 'OA%'
@@ -536,6 +536,6 @@
         all_teachers
       where
         rnk = 1
-      ]]></sql>
+      ]]>    </sql>
   </query>
 </queries>
