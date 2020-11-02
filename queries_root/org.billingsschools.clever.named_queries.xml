@@ -98,7 +98,7 @@
         and cc.dateleft > (select effdate - 5 from first_day_or_today)
         and cc.sectionid > 0
         and students.enroll_status in (-1, 0)
-        and students.schoolid not in (79438)
+        and students.schoolid not in (79438, 6200)
         and students.grade_level >= 0
       ]]>    </sql>
   </query>
@@ -238,7 +238,7 @@
 
       where
         sec.schoolid not in (0, 999999, 6200, 1267, 1834, 79438)
-        and sec.course_number not in ('NC100', 'NC101', 'NC107')
+        and sec.course_number not in ('NC100', 'NC101', 'NC107', 'PREMTWTH')
         --and (select effdate from first_day_or_today) between t.firstday and t.lastday
         and t.firstday <= (select effdate + 5 from first_day_or_today)
         and t.lastday > (select effdate - 5 from first_day_or_today)
