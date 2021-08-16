@@ -239,10 +239,9 @@
       where
         sec.schoolid not in (0, 999999, 6200, 1267, 1834, 79438)
         and sec.course_number not in ('NC100', 'NC101', 'NC107', 'PREMTWTH')
-        --and (select effdate from first_day_or_today) between t.firstday and t.lastday
         and t.firstday <= (select effdate + 5 from first_day_or_today)
         and t.lastday > (select effdate - 5 from first_day_or_today)
-        and sec.no_of_students > 0
+        and (select count(1) from cc where sectionid = sec.id) > 0
         and (
           (
                 sec.external_expression not like 'OA%'
@@ -344,6 +343,7 @@
           , phones.phonenumber contact_phone
           , phones.phonetype contact_phone_type
           , stucon.contactpersondcid
+          , pcas_emailcontact.emailaddress
         from
           pssis_stu_contact_act stucon
           left join phones
@@ -354,6 +354,14 @@
           left join guardianstudent
             on guardianstudent.guardianid = guardianpersonassoc.guardianid
             and guardianstudent.studentsdcid = stucon.studentdcid
+          left join guardian
+            on guardian.guardianid = guardianstudent.guardianid
+          left join pcas_account
+            on pcas_account.pcas_accounttoken = guardian.accountidentifier
+          left join pcas_emailcontact
+            on pcas_emailcontact.pcas_accountid = pcas_account.pcas_accountid
+          left join person
+             on person.id = stucon.contactpersonid
         where
           stucon.contactfirstname is not null
           and guardianstudent.guardianstudentid is not null
@@ -402,7 +410,7 @@
         contacts.contact_type,
         contacts.contact_name contact_name,
         contacts.contact_phone contact_phone,
-        '' contact_email,
+        contacts.emailaddress contact_email,
         contacts.contactpersondcid contact_sis_id,
         substr(se.email, 0, instr(se.email, '@')-1) username,
         lpad(s.student_number, 8, '0') password
