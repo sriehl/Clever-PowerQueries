@@ -17,7 +17,7 @@
     </columns>
     <sql><![CDATA[
       select distinct
-        ss.schoolid school_id,
+        schools.school_number school_id,
         u.dcid staff_id,
         u.email_addr staff_email,
         u.first_name first_name,
@@ -28,7 +28,7 @@
           when u.email_addr = principals.asstprincipalemail then 'Associate Principal'
           when u.groupvalue = 10 then 'Special Education'
           when u.groupvalue in (4,12) then 'Counselor'
-          else ''
+          else g.name
         end title,
         substr(u.email_addr, 0, instr(u.email_addr, '@')-1) username,
         '' password,
@@ -44,8 +44,11 @@
           and g.id = u.groupvalue
         left join (select school_number schoolid, principalemail, asstprincipalemail from schools) principals
           on principals.schoolid = ss.schoolid
+        left join schools
+          on instr(u.canchangeschool, schools.school_number) > 0
       where
-        ss.schoolid not in (0, 999999, 6200, 1267, 1258, 1834)
+        ss.schoolid not in (0, 999999, 6200, 1267, 1258, 1834, 79438)
+        and schools.school_number not in (0, 999999, 6200, 1267, 1258, 1834, 79438)
         and u.psaccess = 1
         and ss.status = 1
         and u.groupvalue in (2,3,4,10,11,12)
