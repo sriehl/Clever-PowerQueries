@@ -1,0 +1,184 @@
+<?xml version="1.0"?>
+<queries>
+  <query name="org.billingsschools.clever.students" coreTable="STUDENTS" flattened="true" tags="">
+    <summary>Clever Students</summary>
+    <description>Clever Students data</description>
+    <columns>
+      <column column="STUDENTS.ENROLLMENT_SCHOOLID">SCHOOL_ID</column>
+      <column column="STUDENTS.ID">STUDENT_ID</column>
+      <column column="STUDENTS.STUDENT_NUMBER">STUDENT_NUMBER</column>
+      <column column="STUDENTS.STATE_STUDENTNUMBER">STATE_ID</column>
+      <column column="STUDENTS.LAST_NAME">LAST_NAME</column>
+      <column column="STUDENTS.MIDDLE_NAME">MIDDLE_NAME</column>
+      <column column="STUDENTS.FIRST_NAME">FIRST_NAME</column>
+      <column column="STUDENTS.GRADE_LEVEL">GRADE</column>
+      <column column="STUDENTS.GENDER">GENDER</column>
+      <column column="STUDENTS.DOB">DOB</column>
+      <column column="STUDENTS.DOB">RACE</column>
+      <column column="STUDENTS.DOB">HISPANIC_LATINO</column>
+      <column column="STUDENTS.DOB">ELL_STATUS</column>
+      <column column="STUDENTS.DOB">FRL_STATUS</column>
+      <column column="STUDENTS.DOB">IEP_STATUS</column>
+      <column column="STUDENTS.STREET">STUDENT_STREET</column>
+      <column column="STUDENTS.CITY">STUDENT_CITY</column>
+      <column column="STUDENTS.STATE">STUDENT_STATE</column>
+      <column column="STUDENTS.ZIP">STUDENT_ZIP</column>
+      <column column="PSM_STUDENTCONTACT.EMAIL">STUDENT_EMAIL</column>
+      <column column="STUDENTS.ZIP">CONTACT_RELATIONSHIP</column>
+      <column column="STUDENTS.ZIP">CONTACT_TYPE</column>
+      <column column="STUDENTS.ZIP">CONTACT_NAME</column>
+      <column column="STUDENTS.ZIP">CONTACT_PHONE</column>
+      <column column="STUDENTS.ZIP">CONTACT_EMAIL</column>
+      <column column="STUDENTS.ZIP">CONTACT_SIS_ID</column>
+      <column column="PSM_STUDENTCONTACT.EMAIL">USERNAME</column>
+      <column column="STUDENTS.STUDENT_NUMBER">PASSWORD</column>
+    </columns>
+    <sql>
+      <![CDATA[
+        with student_race as (
+          select
+            studentid,
+            case racecd
+              when '01' then 'I'
+              when '02' then 'A'
+              when '04' then 'B'
+              when '05' then 'W'
+              when '06' then 'P'
+            end race
+          from
+            studentrace
+        ),
+        studentemail as (
+          select
+            ssm.studentsdcid,
+            psc.email
+          from
+            psm_studentcontact psc
+            inner join sync_studentmap ssm
+              on psc.studentid = ssm.studentid
+            inner join psm_studentcontacttype psct
+              on psc.studentcontacttypeid = psct.id
+              and psct.name = 'Self'
+              and psc.email is not null
+        ),
+        phones as (
+          select
+              persondcid
+            , phonenumber
+            , case phonetype
+                when 'Mobile' then 'Cell'
+                when 'Home' then 'Home'
+                when 'Work' then 'Work'
+                when 'Daytime' then 'Home'
+                else 'Home'
+              end phonetype
+            , dense_rank() over (partition by persondcid order by ispreferred desc, phonenumberpriorityorder) as phnrank
+          from
+            pssis_person_phone
+
+          where
+            phonenumberext is null
+        ),
+        contacts as (
+          select
+              stucon.studentdcid
+            , stucon.currcontactrelationship contact_relationship
+            , case
+                when stucon.iscustodial = 1 then 'family'
+                when stucon.liveswithflg = 1 then 'lives-with'
+                when stucon.isemergency = 1 then 'emergency'
+                else 'other'
+              end contact_type
+            , stucon.contactfirstname || ' ' || stucon.contactlastname contact_name
+            , phones.phonenumber contact_phone
+            , phones.phonetype contact_phone_type
+            , stucon.contactpersondcid
+            , pcas_emailcontact.emailaddress
+          from
+            pssis_stu_contact_act stucon
+            left join phones
+              on phones.persondcid = stucon.contactpersondcid
+              and phones.phnrank = 1
+            left join guardianpersonassoc
+              on guardianpersonassoc.personid = stucon.contactpersonid
+            left join guardianstudent
+              on guardianstudent.guardianid = guardianpersonassoc.guardianid
+              and guardianstudent.studentsdcid = stucon.studentdcid
+            left join guardian
+              on guardian.guardianid = guardianstudent.guardianid
+            left join pcas_account
+              on pcas_account.pcas_accounttoken = guardian.accountidentifier
+            left join pcas_emailcontact
+              on pcas_emailcontact.pcas_accountid = pcas_account.pcas_accountid
+            left join person
+              on person.id = stucon.contactpersonid
+          where
+            stucon.contactfirstname is not null
+            and guardianstudent.guardianstudentid is not null
+            and (
+                stucon.relationshipstartdate is null
+              or stucon.relationshipstartdate <= sysdate
+            )
+            and (
+                stucon.relationshipenddate is null
+              or stucon.relationshipenddate >= sysdate
+            )
+          order by
+            stucon.contactpriorityorder
+        )
+
+        select
+          students.enrollment_schoolid school_id,
+          students.id student_id,
+          to_char(students.student_number) student_number,
+          students.state_studentnumber state_id,
+          students.last_name last_name,
+          students.middle_name middle_name,
+          students.first_name first_name,
+          case students.grade_level
+            when 0 then 'Kindergarten'
+            when -1 then 'Prekindergarten'
+            else to_char(students.grade_level)
+          end grade,
+          students.gender gender,
+          to_char(students.dob, 'MM/DD/YYYY') dob,
+          case when (select count(1) from student_race where studentid = students.id) > 1 then 'M' else (select race from student_race where studentid = students.id) end Race,
+          case when students.fedethnicity = 1 then 'Y' else 'N' end Hispanic_latino,
+          '' ell_status,
+          case students.lunchstatus
+            when 'F' then 'F'
+            when 'R' then 'R'
+            else 'N'
+          end frl_status,
+          case when s_mt_stu_programs_x.speceducflag = 1 then 'Y' else 'N' end iep_status,
+          students.street student_street,
+          students.city student_city,
+          students.state student_state,
+          students.zip student_zip,
+          studentemail.email student_email,
+          contacts.contact_relationship,
+          contacts.contact_type,
+          contacts.contact_name contact_name,
+          contacts.contact_phone contact_phone,
+          contacts.emailaddress contact_email,
+          contacts.contactpersondcid contact_sis_id,
+          substr(studentemail.email, 0, instr(studentemail.email, '@')-1) username,
+          lpad(students.student_number, 8, '0') password
+        from
+          students
+          left join s_mt_stu_programs_x
+            on s_mt_stu_programs_x.studentsdcid = students.dcid
+          left join (select * from studentemail) studentemail
+            on studentemail.studentsdcid = students.dcid
+          left join (select * from contacts) contacts
+            on contacts.studentdcid = students.dcid
+            and contacts.contact_name != ' '
+
+        where
+          students.schoolid not in (0, 999999, 6200, 2100, 1267, 1258, 1834, 79438)
+          and students.enrollment_schoolid not in (0, 999999, 6200, 2100, 1267, 1258, 1834, 79438)
+          and students.enroll_status in (0, -1)
+      ]]>
+    </sql>
+  </query>
+</queries>

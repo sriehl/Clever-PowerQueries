@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<queries>
+  <query name="org.billingsschools.clever.schools" coreTable="SCHOOLS" flattened="true" tags="">
+    <summary>Clever Schools</summary>
+    <description>Clever Schools data</description>
+    <columns>
+      <column column="SCHOOLS.SCHOOL_NUMBER">SCHOOL_ID</column>
+      <column column="SCHOOLS.NAME">SCHOOL_NAME</column>
+      <column column="SCHOOLS.SCHOOL_NUMBER">SCHOOL_NUMBER</column>
+      <column column="SCHOOLS.SCHOOL_NUMBER">STATE_ID</column>
+      <column column="SCHOOLS.LOW_GRADE">LOW_GRADE</column>
+      <column column="SCHOOLS.HIGH_GRADE">HIGH_GRADE</column>
+      <column column="SCHOOLS.PRINCIPAL">PRINCIPAL</column>
+      <column column="SCHOOLS.PRINCIPALEMAIL">PRINCIPAL_EMAIL</column>
+      <column column="SCHOOLS.SCHOOLADDRESS">SCHOOL_ADDRESS</column>
+      <column column="SCHOOLS.SCHOOLCITY">SCHOOL_CITY</column>
+      <column column="SCHOOLS.SCHOOLSTATE">SCHOOL_STATE</column>
+      <column column="SCHOOLS.SCHOOLZIP">SCHOOL_ZIP</column>
+      <column column="SCHOOLS.SCHOOLPHONE">SCHOOL_PHONE</column>
+    </columns>
+    <sql>
+      <![CDATA[
+        select
+            schools.school_number School_id
+          , schools.name School_name
+          , schools.school_number
+          , schools.school_number state_id
+          , schools.low_grade
+          , schools.high_grade
+          , schools.principal Principal
+          , schools.principalemail Principal_email
+          , schools.schooladdress School_address
+          , schools.schoolcity School_city
+          , schools.schoolstate school_state
+          , schools.schoolzip School_zip
+          , schools.schoolphone School_phone
+        from
+          schools
+        where
+          schools.school_number not in (0, 999999, 6200, 1267, 1258, 1834, 79438)
+      ]]>
+    </sql>
+  </query>
+</queries>

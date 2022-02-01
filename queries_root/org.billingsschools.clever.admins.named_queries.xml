@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<queries>
+  <query name="org.billingsschools.clever.admins" coreTable="USERS" flattened="true" tags="">
+    <summary>Clever Staff</summary>
+    <description>Clever Staff data</description>
+    <columns>
+      <column column="SCHOOLSTAFF.SCHOOLID">SCHOOL_ID</column>
+      <column column="USERS.DCID">STAFF_ID</column>
+      <column column="USERS.EMAIL_ADDR">STAFF_EMAIL</column>
+      <column column="USERS.FIRST_NAME">FIRST_NAME</column>
+      <column column="USERS.LAST_NAME">LAST_NAME</column>
+      <column column="USERS.LAST_NAME">DEPARTMENT</column>
+      <column column="USERS.LAST_NAME">TITLE</column>
+      <column column="USERS.EMAIL_ADDR">USERNAME</column>
+      <column column="USERS.EMAIL_ADDR">PASSWORD</column>
+      <column column="USERS.EMAIL_ADDR">ROLE</column>
+    </columns>
+    <sql>
+      <![CDATA[
+        select distinct
+            schools.school_number school_id
+          , users.dcid staff_id
+          , users.email_addr staff_email
+          , users.first_name first_name
+          , users.last_name last_name
+          , '' department
+          , case
+              when users.email_addr = principals.principalemail then 'Principal'
+              when users.email_addr = principals.asstprincipalemail then 'Associate Principal'
+              when users.groupvalue = 10 then 'Special Education'
+              when users.groupvalue in (4,12) then 'Counselor'
+              else groups.name
+            end title
+          , substr(users.email_addr, 0, instr(users.email_addr, '@')-1) username
+          , '' password
+          , groups.name role
+        from
+          users
+          left join schoolstaff
+            on schoolstaff.users_dcid = users.dcid
+          left join s_mt_usr_x mt
+            on mt.usersdcid = users.dcid
+          left join gen groups
+            on groups.cat = 'groups'
+            and groups.id = users.groupvalue
+          left join (select school_number schoolid, principalemail, asstprincipalemail from schools) principals
+            on principals.schoolid = schoolstaff.schoolid
+          left join schools
+            on instr(users.canchangeschool, schools.school_number) > 0
+          left join u_def_ext_users
+            on u_def_ext_users.usersdcid = users.dcid
+        where
+              schoolstaff.schoolid not in (0, 999999, 6200, 1267, 1258, 1834, 79438)
+          and schools.school_number not in (0, 999999, 6200, 1267, 1258, 1834, 79438)
+          and users.psaccess = 1
+          and schoolstaff.status = 1
+          and users.groupvalue in (2,3,4,5,10,11,12)
+          and users.last_name not in ('ETS', 'Health/Pe', 'Music', 'Team', 'Staff', 'Staff 1', 'Staff 2', 'Staff 3', 'Staff 4', 'Staff 5', 'Staff 6')
+          and users.first_name not in ('1', '2', '3', '4', '5', '6', 'staff')
+          and (u_def_ext_users.clever_exclude is null or u_def_ext_users.clever_exclude = 0)
+        order by
+          users.last_name,
+          users.first_name
+      ]]>
+    </sql>
+  </query>
+</queries>

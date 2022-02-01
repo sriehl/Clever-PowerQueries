@@ -1,0 +1,120 @@
+<?xml version="1.0"?>
+<queries>
+  <query name="org.billingsschools.clever.teachers" coreTable="USERS" flattened="true" tags="">
+    <summary>Clever Teachers</summary>
+    <description>Clever Teachers data</description>
+    <columns>
+      <column column="SCHOOLSTAFF.SCHOOLID">SCHOOL_ID</column>
+      <column column="USERS.DCID">TEACHER_ID</column>
+      <column column="USERS.TEACHERNUMBER">TEACHER_NUMBER</column>
+      <column column="S_MT_USR_X.SEID">STATE_TEACHER_ID</column>
+      <column column="USERS.EMAIL_ADDR">TEACHER_EMAIL</column>
+      <column column="USERS.FIRST_NAME">FIRST_NAME</column>
+      <column column="USERS.FIRST_NAME">MIDDLE_NAME</column>
+      <column column="USERS.LAST_NAME">LAST_NAME</column>
+      <column column="USERS.LAST_NAME">TITLE</column>
+      <column column="USERS.EMAIL_ADDR">USERNAME</column>
+      <column column="USERS.EMAIL_ADDR">PASSWORD</column>
+    </columns>
+    <sql>
+      <![CDATA[
+        with first_day_or_today as (
+          select
+            case
+              when terms.firstday > sysdate then terms.firstday
+              else sysdate
+            end effdate
+
+          from
+            terms
+
+          where
+            terms.id = (extract(year from sysdate) + case when extract(month from sysdate) >= 7 then 1 else 0 end - 1991) * 100
+            and terms.schoolid = 0
+            and terms.isyearrec = 1
+
+        )
+        , included_teachers as (
+          select distinct
+              sectionteacher.teacherid
+            , case
+              when sections.schoolid = 1258 and (select max(students.grade_level) from cc left join students on students.id = cc.studentid where cc.sectionid = sections.id group by cc.sectionid) <= 5 then 1439
+              when sections.schoolid = 1258 and (select max(students.grade_level) from cc left join students on students.id = cc.studentid where cc.sectionid = sections.id group by cc.sectionid) <= 8 then 1632
+              when sections.schoolid = 1258 then 1628
+              else sections.schoolid
+            end schoolid
+          from
+            sections
+            left join courses
+              on courses.course_number = sections.course_number
+            left join schools
+              on schools.school_number = sections.schoolid
+            left join terms
+              on terms.id = sections.termid and terms.schoolid = sections.schoolid
+            left join sectionteacher
+              on sectionteacher.sectionid = sections.id
+
+          where
+                sections.schoolid not in (0, 999999, 6200, 1267, 1834, 79438)
+            and sections.course_number not in ('NC100', 'NC101', 'NC107')
+            and terms.firstday <= (select effdate + 5 from first_day_or_today)
+            and terms.lastday > (select effdate - 5 from first_day_or_today)
+            and sections.no_of_students > 0
+            and sectionteacher.end_date + 1 >= (select effdate from first_day_or_today)
+            and (
+              (
+                    sections.external_expression not like 'OA%'
+                and sections.external_expression not like 'OL%'
+              )
+              or sections.course_number in ('IN100','NC200') -- Interventions
+            )
+
+        )
+
+        , all_teachers as (
+          select distinct
+              included_teachers.schoolid
+            , users.dcid teacher_id
+            , users.teachernumber teacher_number
+            , s_mt_usr_x.seid state_teacher_id
+            , users.email_addr teacher_email
+            , users.first_name first_name
+            , '' middle_name
+            , users.last_name last_name
+            , '' title
+            , substr(users.email_addr, 0, instr(users.email_addr, '@')-1) username
+            , '' password
+            , rank() over (partition by users.dcid order by included_teachers.schoolid) rnk
+
+          from
+            (select * from included_teachers) included_teachers
+            left join schoolstaff
+              on schoolstaff.id = included_teachers.teacherid
+            left join users
+              on users.dcid = schoolstaff.users_dcid
+            left join s_mt_usr_x
+              on s_mt_usr_x.usersdcid = users.dcid
+          where
+            users.email_addr is not null
+        )
+
+        select
+            schoolid
+          , teacher_id
+          , teacher_number
+          , state_teacher_id
+          , teacher_email
+          , first_name
+          , middle_name
+          , last_name
+          , title
+          , username
+          , password
+        from
+          all_teachers
+        where
+          rnk = 1
+      ]]>
+    </sql>
+  </query>
+</queries>
