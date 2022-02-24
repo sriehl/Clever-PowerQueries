@@ -177,7 +177,13 @@
         where
           students.schoolid not in (0, 999999, 6200, 2100, 1267, 1258, 1834, 79438)
           and students.enrollment_schoolid not in (0, 999999, 6200, 2100, 1267, 1258, 1834, 79438)
-          and students.enroll_status in (0, -1)
+          and (
+            students.enroll_status = 0
+            or (
+              students.enroll_status = -1
+              and students.entrydate <= sysdate + 14
+            )
+          )
       ]]>
     </sql>
   </query>
