@@ -55,7 +55,7 @@
           and users.psaccess = 1
           and schoolstaff.status = 1
           and (
-            users.groupvalue in (2,3,4,5,10,11,12)
+            users.groupvalue in (2,3,4,5,6,10,11,12)
             or users.email_addr = 'pendillc@billingsschools.org'
           )
           and users.last_name not in ('ETS', 'Health/Pe', 'Music', 'Team', 'Staff', 'Staff 1', 'Staff 2', 'Staff 3', 'Staff 4', 'Staff 5', 'Staff 6')
