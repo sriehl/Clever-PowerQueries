@@ -61,6 +61,7 @@
           and users.last_name not in ('ETS', 'Health/Pe', 'Music', 'Team', 'Staff', 'Staff 1', 'Staff 2', 'Staff 3', 'Staff 4', 'Staff 5', 'Staff 6')
           and users.first_name not in ('1', '2', '3', '4', '5', '6', 'staff')
           and (u_def_ext_users.clever_exclude is null or u_def_ext_users.clever_exclude = 0)
+          and users.email_addr is not null
         order by
           users.last_name,
           users.first_name
