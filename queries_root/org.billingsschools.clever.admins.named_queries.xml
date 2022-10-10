@@ -28,6 +28,7 @@
               when users.email_addr = principals.principalemail then 'Principal'
               when users.email_addr = principals.asstprincipalemail then 'Associate Principal'
               when users.groupvalue = 10 then 'Special Education'
+              when users.groupvalue = 28 then 'Interventionist'
               when users.groupvalue in (4,12) then 'Counselor'
               else groups.name
             end title
@@ -55,7 +56,7 @@
           and users.psaccess = 1
           and schoolstaff.status = 1
           and (
-            users.groupvalue in (2,3,4,5,6,10,11,12,13,17)
+            users.groupvalue in (2,3,4,5,6,10,11,12,13,17,28)
             or users.email_addr = 'pendillc@billingsschools.org'
           )
           and users.last_name not in ('ETS', 'Health/Pe', 'Music', 'Team', 'Staff', 'Staff 1', 'Staff 2', 'Staff 3', 'Staff 4', 'Staff 5', 'Staff 6')
