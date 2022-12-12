@@ -10,7 +10,7 @@
       <column column="S_MT_USR_X.SEID">STATE_TEACHER_ID</column>
       <column column="USERS.EMAIL_ADDR">TEACHER_EMAIL</column>
       <column column="USERS.FIRST_NAME">FIRST_NAME</column>
-      <column column="USERS.FIRST_NAME">MIDDLE_NAME</column>
+      <column column="USERS.MIDDLE_NAME">MIDDLE_NAME</column>
       <column column="USERS.LAST_NAME">LAST_NAME</column>
       <column column="USERS.LAST_NAME">TITLE</column>
       <column column="USERS.EMAIL_ADDR">USERNAME</column>
