@@ -144,7 +144,7 @@
           to_char(students.dob, 'MM/DD/YYYY') dob,
           case when (select count(1) from student_race where studentid = students.id) > 1 then 'M' else (select race from student_race where studentid = students.id) end Race,
           case when students.fedethnicity = 1 then 'Y' else 'N' end Hispanic_latino,
-          '' ell_status,
+          case when s_mt_stu_language_x.lepstatus = 1 then 'Y' else 'N' end ell_status,
           case students.lunchstatus
             when 'F' then 'F'
             when 'R' then 'R'
@@ -173,6 +173,8 @@
           left join (select * from contacts) contacts
             on contacts.studentdcid = students.dcid
             and contacts.contact_name != ' '
+          left join s_mt_stu_language_x
+            on s_mt_stu_language_x.studentsdcid = students.dcid
 
         where
           students.schoolid not in (0, 999999, 6200, 2100, 1267, 1258, 1834, 79438)

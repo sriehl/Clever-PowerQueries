@@ -17,8 +17,59 @@
     </columns>
     <sql>
       <![CDATA[
-        select distinct
-            schools.school_number school_id
+        with user_canchangeschool as (
+          select
+              users.dcid
+            , users.lastfirst
+            , to_number(trim(regexp_substr(users.canchangeschool, '[^;]+', 1, levels.column_value))) school_number
+          from
+            users
+            cross join table(cast(multiset(select level from dual connect by level <= length(regexp_replace(users.canchangeschool, '[^;]+')) + 1) as sys.OdciNumberList)) levels
+          where
+            users.psaccess = 1
+            and to_number(trim(regexp_substr(users.canchangeschool, '[^;]+', 1, levels.column_value))) not in (999999, 6200, 1267, 1258, 1834, 79438)
+          order by
+            users.lastfirst
+        )
+
+        , do_users as (
+          select
+              user_canchangeschool.dcid
+            , user_canchangeschool.lastfirst
+            , schools.school_number school_number
+          from
+            (select * from user_canchangeschool) user_canchangeschool
+            left join schools
+              on schools.school_number not in (999999, 6200, 1267, 1258, 1834, 79438)
+          where
+            user_canchangeschool.school_number = 0
+        )
+
+        , user_all_schools as (
+          select
+              do_users.dcid
+            , do_users.school_number
+            , 1 status
+          from
+            (select * from do_users) do_users
+
+          union
+
+          select
+              user_canchangeschool.dcid
+            , user_canchangeschool.school_number
+            , schoolstaff.status
+          from
+            (select * from user_canchangeschool) user_canchangeschool
+            left join schoolstaff
+              on schoolstaff.users_dcid = user_canchangeschool.dcid
+              and schoolstaff.schoolid = user_canchangeschool.school_number
+          where
+            user_canchangeschool.school_number not in (0)
+        )
+
+        select
+            user_all_schools.school_number school_id
           , users.dcid staff_id
           , users.email_addr staff_email
           , users.first_name first_name
@@ -36,36 +87,32 @@
           , '' password
           , groups.name role
         from
-          users
-          left join schoolstaff
-            on schoolstaff.users_dcid = users.dcid
+          (select * from user_all_schools) user_all_schools
+          left join users
+            on users.dcid = user_all_schools.dcid
           left join s_mt_usr_x mt
             on mt.usersdcid = users.dcid
           left join gen groups
             on groups.cat = 'groups'
             and groups.id = users.groupvalue
           left join (select school_number schoolid, principalemail, asstprincipalemail from schools) principals
-            on principals.schoolid = schoolstaff.schoolid
+            on principals.schoolid = user_all_schools.school_number
           left join schools
-            on instr(users.canchangeschool, schools.school_number) > 0
+            on schools.school_number = user_all_schools.school_number
           left join u_def_ext_users
             on u_def_ext_users.usersdcid = users.dcid
+          inner join (select distinct users_dcid from schoolstaff where status = 1) ss
+            on ss.users_dcid = users.dcid
         where
-              schoolstaff.schoolid not in (0, 999999, 6200, 1267, 1258, 1834, 79438)
-          and schools.school_number not in (0, 999999, 6200, 1267, 1258, 1834, 79438)
-          and users.psaccess = 1
-          and schoolstaff.status = 1
+              users.psaccess = 1
           and (
-            users.groupvalue in (2,3,4,5,6,10,11,12,13,17,28)
-            or users.email_addr = 'pendillc@billingsschools.org'
-          )
+              users.groupvalue in (2,3,4,5,6,10,11,12,13,17,28)
+              or users.email_addr = 'pendillc@billingsschools.org'
+            )
           and users.last_name not in ('ETS', 'Health/Pe', 'Music', 'Team', 'Staff', 'Staff 1', 'Staff 2', 'Staff 3', 'Staff 4', 'Staff 5', 'Staff 6')
           and users.first_name not in ('1', '2', '3', '4', '5', '6', 'staff')
           and (u_def_ext_users.clever_exclude is null or u_def_ext_users.clever_exclude = 0)
           and users.email_addr is not null
-        order by
-          users.last_name,
-          users.first_name
       ]]>
     </sql>
   </query>
