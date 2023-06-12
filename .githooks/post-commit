@@ -1,0 +1,5 @@
+#!/bin/sh
+#
+# Create an archive that can be installed in PowerSchool
+
+git archive --format=zip -o "`basename "$PWD"`.zip" HEAD
