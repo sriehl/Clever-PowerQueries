@@ -64,7 +64,12 @@
           , extra_teachers_2.users_dcid teacher_2_id
           , extra_teachers_3.users_dcid teacher_3_id
           , extra_teachers_4.users_dcid teacher_4_id
-          , schools.abbreviation || ': ' || courses.course_name || ' section ' || sections.section_number name
+          , to_char(floor(terms.id / 100 - 10)) || '-' || to_char(floor(terms.id / 100 - 9))
+              || case when floor(terms.id / 100) != terms.id / 100 then ' ' || terms.abbreviation end
+              || case when sections.schoolid in (1250, 1251, 1628, 2100, 1853, 1631, 1632, 1851, 1645, 1646) then ' ' || sections.expression end
+              || ' ' || courses.course_name
+              || ' - ' || sections.id
+            name
           , sections.section_number
           , '' grade
           , courses.course_name
