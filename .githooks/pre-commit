@@ -49,5 +49,5 @@ fi
 exec git diff-index --check --cached $against --
 
 # Change the version number in plugin.xml
-cat plugin.xml | xml ed -u //@version --value `date +"%Y.%m.%d.%H.%M.%S"` > plugin.xml
-git add plugin.xml
+exec cat plugin.xml | xml ed -u //@version --value `date +"%Y.%m.%d.%H.%M.%S"` > plugin.xml
+exec git add plugin.xml
