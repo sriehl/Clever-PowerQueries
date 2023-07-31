@@ -72,7 +72,7 @@
             name
           , sections.section_number
           , '' grade
-          , courses.course_name
+          , '' course_name -- need to be blank to use the name above
           , courses.course_number
           , '' course_description
           , substr(sections.expression, 0, instr(sections.expression, '(')-1) period
