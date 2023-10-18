@@ -106,7 +106,7 @@
         where
               users.psaccess = 1
           and (
-              users.groupvalue in (2,3,4,5,6,10,11,12,13,17,28,42)
+              users.groupvalue in (2,3,4,5,6,10,11,12,13,17,28,37,42)
               or users.email_addr = 'pendillc@billingsschools.org'
             )
           and users.last_name not in ('ETS', 'Health/Pe', 'Music', 'Team', 'Staff', 'Staff 1', 'Staff 2', 'Staff 3', 'Staff 4', 'Staff 5', 'Staff 6')
